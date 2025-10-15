@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YouTube Shorts Clone</title>
+    <style>
+      body {
+        margin: 0;
+        background-color: #000;
+        color: white;
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100vh;
+        justify-content: center;
+        overflow: hidden;
+      }
+
+      h1 {
+        color: #ff0000;
+        margin-bottom: 10px;
+      }
+
+      #inputContainer {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      input {
+        padding: 10px;
+        width: 260px;
+        border: none;
+        border-radius: 5px;
+      }
+
+      button {
+        background-color: #ff0000;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 8px 12px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #cc0000;
+      }
+
+      #shortsWrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 30px;
+      }
+
+      #playerContainer {
+        position: relative;
+        width: 360px;
+        height: 640px;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+      }
+
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+      }
+
+      #rightControls {
+        position: absolute;
+        right: 20px;
+        bottom: 100px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 25px;
+        z-index: 10;
+      }
+
+      .action-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: white;
+        font-size: 30px;
+        transition: transform 0.2s ease, color 0.2s ease;
+      }
+
+      .action-btn:hover {
+        transform: scale(1.2);
+        color: #ff0000;
+      }
+
+      /* .like-btn.liked {
+        color: #ff0000;
+        transform: scale(1.3);
+      } */
+
+      /* .heart {
+        position: absolute;
+        bottom: 50%;
+        right: 50%;
+        transform: translate(50%, 50%);
+        font-size: 80px;
+        color: #ff0000;
+        opacity: 0;
+        animation: pop 0.6s ease;
+      } */
+
+      @keyframes pop {
+        0% {
+          transform: translate(50%, 50%) scale(0.5);
+          opacity: 0.5;
+        }
+        50% {
+          transform: translate(50%, 50%) scale(1.4);
+          opacity: 1;
+        }
+        100% {
+          transform: translate(50%, 50%) scale(1);
+          opacity: 0;
+        }
+      }
+
+      #outsideControls {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+      }
+
+      #outsideControls button {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        width: 55px;
+        height: 55px;
+        font-size: 24px;
+        color: white;
+        transition: 0.3s;
+      }
+
+      #outsideControls button:hover {
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.1);
+      }
+
+      #removeBtn {
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>YouTube Shorts</h1>
+
+    <div id="inputContainer">
+      <input
+        type="text"
+        id="shortUrl"
+        placeholder="Paste YouTube Shorts URL..."
+      />
+      <button onclick="addShort()">Add</button>
+    </div>
+
+    <div id="shortsWrapper">
+      <!-- Left Up/Down Buttons -->
+      <div id="outsideControls">
+        <button onclick="prevShort()">⬆️</button>
+        <button onclick="nextShort()">⬇️</button>
+      </div>
+
+      <div id="playerContainer">
+        <iframe id="player" allowfullscreen></iframe>
+        <div id="rightControls">
+          <button class="action-btn like-btn" onclick="toggleLike()">❤️</button>
+        </div>
+        <div class="heart" id="heartAnim">❤️</div>
+      </div>
+    </div>
+
+    <button id="removeBtn" onclick="removeCurrent()">🗑️ Remove</button>
+
+    <script>
+      let shorts = JSON.parse(localStorage.getItem("shortsList")) || [];
+      let currentIndex = 0;
+      const player = document.getElementById("player");
+      const likeBtn = document.querySelector(".like-btn");
+      const heartAnim = document.getElementById("heartAnim");
+
+      window.onload = () => {
+        if (shorts.length > 0) {
+          loadShort(currentIndex);
+        } else {
+          player.src = "";
+        }
+      };
+
+      function extractVideoId(url) {
+        const regex = /(?:youtube\.com\/shorts\/|youtu\.be\/)([a-zA-Z0-9_-]+)/;
+        const match = url.match(regex);
+        return match ? match[1] : null;
+      }
+
+      function addShort() {
+        const url = document.getElementById("shortUrl").value.trim();
+        const id = extractVideoId(url);
+        document.getElementById("shortUrl").value = "";
+
+        if (!id) {
+          alert("❌ Invalid URL!");
+          return;
+        }
+
+        if (!shorts.includes(id)) {
+          shorts.push(id);
+          localStorage.setItem("shortsList", JSON.stringify(shorts));
+          currentIndex = shorts.length - 1;
+          loadShort(currentIndex);
+        } else {
+          alert("ℹ️ Already added.");
+        }
+      }
+
+      function loadShort(index) {
+        if (shorts.length === 0) return;
+        player.src = `https://www.youtube.com/embed/${shorts[index]}?autoplay=1&loop=1&playlist=${shorts[index]}`;
+        likeBtn.classList.remove("liked");
+      }
+
+      function nextShort() {
+        if (shorts.length === 0) return;
+        currentIndex = (currentIndex + 1) % shorts.length;
+        loadShort(currentIndex);
+      }
+
+      function prevShort() {
+        if (shorts.length === 0) return;
+        currentIndex = (currentIndex - 1 + shorts.length) % shorts.length;
+        loadShort(currentIndex);
+      }
+
+      function removeCurrent() {
+        if (shorts.length === 0) return;
+        shorts.splice(currentIndex, 1);
+        if (shorts.length === 0) {
+          player.src = "";
+        } else {
+          currentIndex = currentIndex % shorts.length;
+          loadShort(currentIndex);
+        }
+        localStorage.setItem("shortsList", JSON.stringify(shorts));
+      }
+
+      function toggleLike() {
+        likeBtn.classList.toggle("liked");
+        heartAnim.style.opacity = 1;
+        heartAnim.style.animation = "none";
+        heartAnim.offsetHeight; // restart animation
+        heartAnim.style.animation = "pop 0.6s ease";
+      }
+
+      // Optional keyboard navigation
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowDown") nextShort();
+        if (e.key === "ArrowUp") prevShort();
+        if (e.key === "l") toggleLike();
+      });
+    </script>
+  </body>
+</html>
